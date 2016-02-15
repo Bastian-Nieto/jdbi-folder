@@ -21,7 +21,7 @@ public class CustomMapper<T> implements ResultSetMapper<T>
     protected Map<String, FieldWrapper> fields = new HashMap<>();
     protected List<FieldMapperFactory> factories = new ArrayList<>();
     protected Map<Class<?>, AnnotatedFields> annotatedFieldsMap;
-    protected Optional<Function<String, String>> processResultSetName;
+    protected Optional<Function<String, String>> processResultSetName = Optional.empty();
 
     public CustomMapper(Class<T> type) {
         this(type, new ArrayList<>());
