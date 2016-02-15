@@ -11,6 +11,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 public class GenericFolder<T> implements Folder2<List<T>> {
 
@@ -22,6 +23,12 @@ public class GenericFolder<T> implements Folder2<List<T>> {
     public GenericFolder(Class<T> type) {
         folder = new Folder();
         mapper = new CustomMapper<>(type, overriddenFactories);
+        acc = new ArrayList<>();
+    }
+
+    public GenericFolder(Class<T> type, Function<String, String> processResultSetName) {
+        folder = new Folder();
+        mapper = new CustomMapper<>(type, overriddenFactories, processResultSetName);
         acc = new ArrayList<>();
     }
 

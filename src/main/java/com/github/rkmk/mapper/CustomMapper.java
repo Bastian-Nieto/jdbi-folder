@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.function.Function;
 
 import static com.github.rkmk.helper.FieldWrapper.rootClassNameSpace;
 import static com.github.rkmk.mapper.FieldHelper.getInstance;
@@ -16,13 +17,20 @@ import static java.util.Objects.nonNull;
 
 public class CustomMapper<T> implements ResultSetMapper<T>
 {
-    private final Class<T> type;
-    private Map<String, FieldWrapper> fields = new HashMap<>();
-    private List<FieldMapperFactory> factories = new ArrayList<>();
-    private Map<Class<?>, AnnotatedFields> annotatedFieldsMap;
+    protected final Class<T> type;
+    protected Map<String, FieldWrapper> fields = new HashMap<>();
+    protected List<FieldMapperFactory> factories = new ArrayList<>();
+    protected Map<Class<?>, AnnotatedFields> annotatedFieldsMap;
+    protected Optional<Function<String, String>> processResultSetName;
 
     public CustomMapper(Class<T> type) {
         this(type, new ArrayList<>());
+    }
+
+    public CustomMapper(Class<T> type, List<FieldMapperFactory> overriddenFactories, Function<String, String> processResultSetName) {
+        this(type, overriddenFactories);
+        this.processResultSetName = Optional.of(processResultSetName);
+
     }
 
     public CustomMapper(Class<T> type, List<FieldMapperFactory> overriddenFactories) {
@@ -31,18 +39,17 @@ public class CustomMapper<T> implements ResultSetMapper<T>
         this.factories.addAll(new FieldMapperFactories().getValues());
         this.fields = AnnotatedFieldFactory.getFields(type);
         this.annotatedFieldsMap = AnnotatedFieldFactory.get(type);
-
     }
 
-    private FieldWrapper processResultSetName(String resultSetName) {
+    protected String defaultProcessResultSetName(String resultSetName) {
         String[] strings = resultSetName.split("\\$");
 
         if(strings.length ==1) {
-            return fields.get(resultSetName.replace("_", ""));
+            return resultSetName.replace("_", "");
         }else {
             String nameSpace = strings[0];
             String nameWithoutUnderscore = strings[1].replace("_", "");
-            return fields.get(nameSpace + "$" + nameWithoutUnderscore);
+            return nameSpace + "$" + nameWithoutUnderscore;
         }
     }
 
@@ -58,7 +65,10 @@ public class CustomMapper<T> implements ResultSetMapper<T>
 
         for (int index = 1; index <= metadata.getColumnCount(); ++index) {
             String name = metadata.getColumnLabel(index).toLowerCase();
-            FieldWrapper fieldWrapper = processResultSetName(name);
+
+            String fieldRepresentation = this.processResultSetName.isPresent() ? this.processResultSetName.get().apply(name) :
+                    this.defaultProcessResultSetName(name);
+            FieldWrapper fieldWrapper = this.fields.get(fieldRepresentation);
 
             if (fieldWrapper != null) {
                 Class type = fieldWrapper.getFieldType();
@@ -76,7 +86,7 @@ public class CustomMapper<T> implements ResultSetMapper<T>
         return object;
     }
 
-    private void setNestedObjects(Class<?> type, Set<String> nestedClassNames, Map<String, Object> instanceMap, Object parentObject) {
+    protected void setNestedObjects(Class<?> type, Set<String> nestedClassNames, Map<String, Object> instanceMap, Object parentObject) {
         for (AnnotatedField field : annotatedFieldsMap.get(type).values()) {
             if(nestedClassNames.contains(field.getNameSpace()) && instanceMap.containsKey(field.getNameSpace()) ) {
                 Object currentObject = instanceMap.get(field.getNameSpace());
@@ -86,7 +96,7 @@ public class CustomMapper<T> implements ResultSetMapper<T>
         }
     }
 
-    private Set<String> getNestedClassNames(ResultSet rs) throws SQLException {
+    protected Set<String> getNestedClassNames(ResultSet rs) throws SQLException {
         ResultSetMetaData metaData = rs.getMetaData();
         Set<String> childClassNames = new HashSet<>();
         for (int i = 1; i <= metaData.getColumnCount(); i++) {
