@@ -5,10 +5,10 @@
     <groupId>com.github.rkmk</groupId>
     <artifactId>jdbi-folder</artifactId>
     <packaging>jar</packaging>
-    <version>1.4.0</version>
+    <version>1.4.1-4SH</version>
     <name>jdbi-folder</name>
     <description>Used to fold objects from jdbi result set</description>
-    <url>https://github.com/rkmk/jdbi-folder</url>
+    <url>https://github.com/Bastian-Nieto/jdbi-folder</url>
 
     <licenses>
         <license>
@@ -25,9 +25,9 @@
     </developers>
 
     <scm>
-        <connection>scm:git:git@github.com:rkmk/jdbi-folder.git</connection>
-        <developerConnection>scm:git:git@github.com:rkmk/jdbi-folder.git</developerConnection>
-        <url>https://github.com/rkmk/jdbi-folder.git</url>
+        <connection>scm:git:git@github.com:Bastian-Nieto/jdbi-folder.git</connection>
+        <developerConnection>scm:git:git@github.com:Bastian-Nieto/jdbi-folder.git</developerConnection>
+        <url>https://github.com/Bastian-Nieto/jdbi-folder</url>
     </scm>
 
     <distributionManagement>
