@@ -6,6 +6,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static java.util.Objects.nonNull;
 
@@ -69,13 +70,14 @@ public class FieldHelper {
 
     public static <O> Object accessField(String fieldName, O o) {
         Field field = null;
-        try {
-            field = o.getClass().getDeclaredField(fieldName);
-        } catch (NoSuchFieldException e) {
-            throw new IllegalArgumentException("The field must not be null");
-        }
-        if (field == null) {
-            throw new IllegalArgumentException("The field must not be null");
+        List<Field> optionalField = getFields(o.getClass());
+        Optional<Field> field2 = optionalField.stream().filter(field1 -> {
+            return field1.getName().equals(fieldName);
+        }).findFirst();
+        if (!field2.isPresent()) {
+            throw new IllegalArgumentException("Missing field in class");
+        } else {
+            field = field2.get();
         }
         field.setAccessible(true);
         try {
