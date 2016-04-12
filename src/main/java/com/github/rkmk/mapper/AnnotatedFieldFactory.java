@@ -4,10 +4,14 @@ import com.github.rkmk.annotations.ColumnName;
 import com.github.rkmk.annotations.OneToMany;
 import com.github.rkmk.annotations.OneToOne;
 import com.github.rkmk.annotations.PrimaryKey;
+import com.github.rkmk.annotations.TypeUse;
 import com.github.rkmk.helper.FieldWrapper;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -56,23 +60,37 @@ public class AnnotatedFieldFactory {
     }
 
     private static void processFields(Class<?> type, String nameSpace, Map<String, FieldWrapper> fields) {
-        AnnotatedFields annotatedFields = new AnnotatedFields();
 
-        for (Field field : FieldHelper.getFields(type)) {
-            AnnotatedField annotatedField = create(field);
-            annotatedFields.add(annotatedField);
-            if(annotatedField != null && annotatedField.isNestedField())  {
-                processFields(annotatedField.getType(), annotatedField.getNameSpace(), fields);
-            }
-            processField(fields, nameSpace, field, type);
+        List<Class<?>> fieldTypes = new ArrayList<>();
+        fieldTypes.add(type);
+
+        TypeUse typeUse = type.getAnnotation(TypeUse.class);
+        if (typeUse != null) {
+            fieldTypes.addAll(Arrays.asList(typeUse.types()));
         }
-        annotatedFieldsMap.put(type, annotatedFields);
+
+        for (Class<?> fieldType : fieldTypes) {
+            AnnotatedFields annotatedFields = new AnnotatedFields();
+
+            List<Field> fieldList = FieldHelper.getFields(fieldType);
+            for (Field field : fieldList) {
+                AnnotatedField annotatedField = create(field);
+                annotatedFields.add(annotatedField);
+                if (annotatedField != null &&
+                        annotatedField.isNestedField() &&
+                        !annotatedField.getNameSpace().equals(nameSpace)) {
+                    processFields(annotatedField.getType(), annotatedField.getNameSpace(), fields);
+                }
+                processField(fields, nameSpace, field, fieldType);
+            }
+            annotatedFieldsMap.put(fieldType, annotatedFields);
+        }
     }
 
     private static void processField(Map<String, FieldWrapper> fields, String nameSpace, Field field, Class<?> type) {
         ColumnName annotation = field.getAnnotation(ColumnName.class);
         String name = nonNull(annotation) ? annotation.value() : field.getName();
-        fields.put(getResultSetFieldName(nameSpace, name), new FieldWrapper(type, field, nameSpace));
+        fields.putIfAbsent(getResultSetFieldName(nameSpace, name), new FieldWrapper(type, field, nameSpace));
     }
 
     private static String getResultSetFieldName(String nameSpace, String name) {

@@ -1,16 +1,24 @@
 package com.github.rkmk.mapper;
 
+import com.github.rkmk.annotations.TypeUse;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static java.util.Objects.nonNull;
 
 public class FieldHelper {
+
+    private static final Map<Class<?>, TypeFactory> TYPE_FACTORIES = new HashMap<>();
 
     public static void set(Field field, Object object, Object value) {
         field.setAccessible(true);
@@ -42,6 +50,35 @@ public class FieldHelper {
         }
 
     }
+
+    public static <T> T getInstance(Class<T> type, ResultSet rs, int index) throws SQLException {
+        Class<? extends T> realType;
+
+        TypeUse typeUse = type.getAnnotation(TypeUse.class);
+        if (typeUse != null) {
+            TypeFactory typeFactory = TYPE_FACTORIES.get(type);
+
+            if (typeFactory == null) {
+                try {
+                    typeFactory = typeUse.value().newInstance();
+                    TYPE_FACTORIES.put(type, typeFactory);
+                } catch (InstantiationException | IllegalAccessException e) {
+                    throw new IllegalArgumentException(
+                            String.format("Can't instantiate TypeUse %s for type: %s",
+                                    typeUse.value().getName(),
+                                    type.getName()),
+                            e);
+                }
+            }
+
+            realType = typeFactory.getType(type, rs, index);
+        } else {
+            realType = type;
+        }
+
+        return getInstance(realType);
+    }
+
 
     public static Class<?> getParameterisedReturnType(Field field){
         Class<?> result = null ;

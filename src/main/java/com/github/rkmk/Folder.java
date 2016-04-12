@@ -27,7 +27,7 @@ public class Folder<T> {
         if(isNull(oldObject) || isNull(newObject))
             return;
 
-        AnnotatedFields annotatedFields = fieldsMap.get(oldObject.getClass());
+        AnnotatedFields annotatedFields = getAnnotatedFields(oldObject);
 
         for (AnnotatedField annotatedField : annotatedFields.values()) {
             Object oldValue = get(annotatedField.getField(), oldObject);
@@ -63,11 +63,23 @@ public class Folder<T> {
 
     private<M> M getAlreadyPresentValue(Collection<M> collection, M object) {
         HashMap<String, Object> filter = new HashMap<>();
-        for (AnnotatedField primaryKeyField : fieldsMap.get(object.getClass()).getPrimaryKeys()) {
+        for (AnnotatedField primaryKeyField : getAnnotatedFields(object).getPrimaryKeys()) {
             Field field = primaryKeyField.getField();
             filter.put(primaryKeyField.getName(), get(field, object));
         }
         Collection<M> result = where(collection, filter);
         return result.size() > 0 ? result.iterator().next() : null;
+    }
+
+    private <M> AnnotatedFields getAnnotatedFields(M object) {
+        AnnotatedFields annotatedFields = fieldsMap.get(object.getClass());
+        if (annotatedFields == null) {
+            return fieldsMap.get(fieldsMap.keySet().stream()
+                                          .filter(clazz -> clazz.isAssignableFrom(object.getClass()))
+                                          .findFirst()
+                                          .orElse(null));
+        }
+
+        return annotatedFields;
     }
 }
