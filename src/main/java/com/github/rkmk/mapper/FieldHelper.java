@@ -1,8 +1,10 @@
 package com.github.rkmk.mapper;
 
 import com.github.rkmk.annotations.TypeUse;
+import org.apache.commons.beanutils.PropertyUtils;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.sql.ResultSet;
@@ -12,13 +14,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static java.util.Objects.nonNull;
 
 public class FieldHelper {
 
     private static final Map<Class<?>, TypeFactory> TYPE_FACTORIES = new HashMap<>();
+    private static final Map<Class<?>, List<Field>> fieldsCache = new HashMap<>();
 
     public static void set(Field field, Object object, Object value) {
         field.setAccessible(true);
@@ -96,31 +98,27 @@ public class FieldHelper {
     }
 
     public static List<Field> getFields(Class<?> type) {
+        List<Field> fields = fieldsCache.get(type);
+        if (fields != null) {
+            return fields;
+        }
+
         List<Field> result = new ArrayList<>();
         Class<?> clazz = type;
         while(clazz.getSuperclass() != null) {
             result.addAll(Arrays.asList(clazz.getDeclaredFields()));
             clazz = clazz.getSuperclass();
         }
+
+        fieldsCache.put(type, result);
         return result;
     }
 
     public static <O> Object accessField(String fieldName, O o) {
-        Field field = null;
-        List<Field> optionalField = getFields(o.getClass());
-        Optional<Field> field2 = optionalField.stream().filter(field1 -> {
-            return field1.getName().equals(fieldName);
-        }).findFirst();
-        if (!field2.isPresent()) {
-            throw new IllegalArgumentException("Missing field in class");
-        } else {
-            field = field2.get();
-        }
-        field.setAccessible(true);
         try {
-            return field.get(o);
-        } catch (IllegalAccessException e) {
-            throw new IllegalArgumentException("The field not accessible");
+            return PropertyUtils.getProperty(o, fieldName);
+        } catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+            throw new IllegalArgumentException(String.format("Can't access field %s: %s", fieldName, o), e);
         }
     }
 

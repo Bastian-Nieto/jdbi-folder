@@ -5,7 +5,7 @@
     <groupId>com.github.rkmk</groupId>
     <artifactId>jdbi-folder</artifactId>
     <packaging>jar</packaging>
-    <version>1.4.2-4SH</version>
+    <version>1.4.3-4SH</version>
     <name>jdbi-folder</name>
     <description>Used to fold objects from jdbi result set</description>
     <url>https://github.com/Bastian-Nieto/jdbi-folder</url>
@@ -74,6 +74,12 @@
             <artifactId>lombok</artifactId>
             <version>1.12.6</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <version>1.9.2</version>
         </dependency>
     </dependencies>
 
